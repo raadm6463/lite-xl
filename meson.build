@@ -5,6 +5,7 @@ project('lite-xl',
     meson_version : '>= 0.56',
     default_options : [
         'c_std=gnu11',
+        'cpp_std=c++20',
         'wrap_mode=nofallback'
     ]
 )
