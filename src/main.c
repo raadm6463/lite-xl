@@ -7,6 +7,8 @@
 
 #include <signal.h>
 
+#include "cimgui.h"
+
 #ifdef _WIN32
   #include <windows.h>
 #elif defined(__linux__)
@@ -166,6 +168,11 @@ int main(int argc, char **argv) {
 
   SDL_DisplayMode dm;
   SDL_GetCurrentDisplayMode(0, &dm);
+
+  IMGUI_CHECKVERSION();
+  ImGui_CreateContext(NULL);
+
+  ImGuiIO* io = ImGui_GetIO(); (void)io;
 
   window = SDL_CreateWindow(
     "", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w * 0.8, dm.h * 0.8,

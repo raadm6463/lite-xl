@@ -1,5 +1,5 @@
 project('lite-xl',
-    ['c'],
+    ['c', 'cpp'],
     version : '2.1.1',
     license : 'MIT',
     meson_version : '>= 0.56',

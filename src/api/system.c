@@ -38,6 +38,8 @@
 
 extern SDL_Window *window;
 
+#include "cimgui.h"
+IMGUI_IMPL_API bool     ImGui_ImplSDL2_ProcessEvent(const SDL_Event* event);
 
 static const char* button_name(int button) {
   switch (button) {
@@ -177,9 +179,12 @@ static int f_poll_event(lua_State *L) {
   SDL_Event event_plus;
 
 top:
-  if ( !SDL_PollEvent(&e) ) {
+  int ret = SDL_PollEvent(&e);
+  ImGui_ImplSDL2_ProcessEvent(&e);
+  if ( !ret ) {
     return 0;
   }
+
 
   switch (e.type) {
     case SDL_QUIT:

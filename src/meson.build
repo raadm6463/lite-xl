@@ -1,3 +1,7 @@
+subdir('imgui')
+lite_deps += [cimgui_dep, imgui_impl_dep]
+lite_cargs += '-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS'
+
 lite_sources = [
     'api/api.c',
     'api/renderer.c',

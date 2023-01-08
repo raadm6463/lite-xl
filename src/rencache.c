@@ -307,8 +307,8 @@ void rencache_end_frame() {
 
   /* update dirty rects */
   if (rect_count > 0) {
-    ren_update_rects(rect_buf, rect_count);
   }
+  ren_update_rects(rect_buf, rect_count);
 
   /* swap cell buffer and reset */
   unsigned *tmp = cells;

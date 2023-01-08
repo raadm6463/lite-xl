@@ -2,6 +2,13 @@
 #include <stdio.h>
 #include "renwindow.h"
 
+#include "cimgui.h"
+IMGUI_IMPL_API bool     ImGui_ImplSDL2_InitForSDLRenderer(SDL_Window* window, SDL_Renderer* renderer);
+IMGUI_IMPL_API bool     ImGui_ImplSDLRenderer_Init(SDL_Renderer* renderer);
+IMGUI_IMPL_API void     ImGui_ImplSDLRenderer_RenderDrawData(ImDrawData* draw_data);
+//#include "imgui_impl_sdl.h"
+//#include "imgui_impl_sdlrenderer.h"
+
 #ifdef LITE_USE_SDL_RENDERER
 static int query_surface_scale(RenWindow *ren) {
   int w_pixels, h_pixels;
@@ -17,11 +24,14 @@ static int query_surface_scale(RenWindow *ren) {
 static void setup_renderer(RenWindow *ren, int w, int h) {
   /* Note that w and h here should always be in pixels and obtained from
      a call to SDL_GL_GetDrawableSize(). */
+
   if (ren->renderer) {
     SDL_DestroyTexture(ren->texture);
-    SDL_DestroyRenderer(ren->renderer);
+  } else {
+    ren->renderer = SDL_CreateRenderer(ren->window, -1, 0);
+    ImGui_ImplSDL2_InitForSDLRenderer(ren->window, ren->renderer);
+    ImGui_ImplSDLRenderer_Init(ren->renderer);
   }
-  ren->renderer = SDL_CreateRenderer(ren->window, -1, 0);
   ren->texture = SDL_CreateTexture(ren->renderer, SDL_PIXELFORMAT_BGRA32, SDL_TEXTUREACCESS_STREAMING, w, h);
   ren->surface_scale = query_surface_scale(ren);
 }
@@ -99,6 +109,7 @@ void renwin_show_window(RenWindow *ren) {
   SDL_ShowWindow(ren->window);
 }
 
+bool show_demo_window = 1;
 void renwin_update_rects(RenWindow *ren, RenRect *rects, int count) {
 #ifdef LITE_USE_SDL_RENDERER
   const int scale = ren->surface_scale;
@@ -110,7 +121,16 @@ void renwin_update_rects(RenWindow *ren, RenRect *rects, int count) {
     int32_t *pixels = ((int32_t *) ren->surface->pixels) + x + ren->surface->w * y;
     SDL_UpdateTexture(ren->texture, &sr, pixels, ren->surface->w * 4);
   }
+  ImGui_ImplSDLRenderer_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  ImGui_NewFrame();
+
+  if (show_demo_window)
+    ImGui_ShowDemoWindow(&show_demo_window);
+
+  ImGui_Render();
   SDL_RenderCopy(ren->renderer, ren->texture, NULL, NULL);
+  ImGui_ImplSDLRenderer_RenderDrawData(ImGui_GetDrawData());
   SDL_RenderPresent(ren->renderer);
 #else
   SDL_UpdateWindowSurfaceRects(ren->window, (SDL_Rect*) rects, count);
