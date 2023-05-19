@@ -15,7 +15,6 @@
   #include <stdalign.h>
 #endif
 
-#include <lauxlib.h>
 #include "rencache.h"
 #include "renwindow.h"
 

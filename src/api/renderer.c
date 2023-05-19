@@ -25,7 +25,7 @@ static int font_get_options(
         } else if (strcmp(antialiasing_str, "subpixel") == 0) {
           *antialiasing = FONT_ANTIALIASING_SUBPIXEL;
         } else {
-          return luaL_error(
+          luaL_error(
             L,
             "error in font options, unknown antialiasing option: \"%s\"",
             antialiasing_str
@@ -44,7 +44,7 @@ static int font_get_options(
         } else if (strcmp(hinting_str, "full") == 0) {
           *hinting = FONT_HINTING_FULL;
         } else {
-          return luaL_error(
+          luaL_error(
             L,
             "error in font options, unknown hinting option: \"%s\"",
             hinting
@@ -92,7 +92,7 @@ static int f_font_load(lua_State *L) {
   RenFont** font = lua_newuserdata(L, sizeof(RenFont*));
   *font = ren_font_load(&window_renderer, filename, size, antialiasing, hinting, style);
   if (!*font)
-    return luaL_error(L, "failed to load font");
+    luaL_error(L, "failed to load font");
   luaL_setmetatable(L, API_TYPE_FONT);
   return 1;
 }
@@ -132,7 +132,7 @@ static int f_font_copy(lua_State *L) {
     RenFont** font = lua_newuserdata(L, sizeof(RenFont*));
     *font = ren_font_copy(&window_renderer, fonts[i], size, antialiasing, hinting, style);
     if (!*font)
-      return luaL_error(L, "failed to copy font");
+      luaL_error(L, "failed to copy font");
     luaL_setmetatable(L, API_TYPE_FONT);
     if (table)
       lua_rawseti(L, -2, i+1);
@@ -146,14 +146,14 @@ static int f_font_group(lua_State* L) {
 
   table_size = lua_rawlen(L, 1);
   if (table_size <= 0)
-    return luaL_error(L, "failed to create font group: table is empty");
+    luaL_error(L, "failed to create font group: table is empty");
   if (table_size > FONT_FALLBACK_MAX)
-    return luaL_error(L, "failed to create font group: table size too large");
+    luaL_error(L, "failed to create font group: table size too large");
 
   // we also need to ensure that there are no fontgroups inside it
   for (int i = 1; i <= table_size; i++) {
     if (lua_rawgeti(L, 1, i) != LUA_TUSERDATA)
-      return luaL_typeerror(L, -1, API_TYPE_FONT "(userdata)");
+      luaL_typeerror(L, -1, API_TYPE_FONT "(userdata)");
     lua_pop(L, 1);
   }
 
@@ -234,7 +234,7 @@ static int color_value_error(lua_State *L, int idx, int table_idx) {
   // the reason it went through so much hoops is to generate the correct error
   // message (with function name and proper index).
   msg = lua_pushfstring(L, "table[%d]: %s expected, got %s", table_idx, lua_typename(L, LUA_TNUMBER), type);
-  return luaL_argerror(L, idx, msg);
+  luaL_argerror(L, idx, msg);
 }
 
 static int get_color_value(lua_State *L, int idx, int table_idx) {

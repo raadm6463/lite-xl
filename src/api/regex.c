@@ -250,7 +250,7 @@ static int f_pcre_gmatch(lua_State *L) {
   state->found = true;
   state->regex_compiled = regex_compiled;
 
-  lua_pushcclosure(L, regex_gmatch_iterator, 3);
+  lua_pushcclosure(L, regex_gmatch_iterator, NULL, 3);
   return 1;
 }
 
@@ -348,7 +348,7 @@ static int f_pcre_gsub(lua_State *L) {
   if (results_count < 0) {
     PCRE2_UCHAR errmsg[256];
     pcre2_get_error_message(results_count, errmsg, sizeof(errmsg));
-    return luaL_error(L, "regex substitute error: %s", errmsg);
+    luaL_error(L, "regex substitute error: %s", errmsg);
   }
 
   return return_count;

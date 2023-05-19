@@ -591,7 +591,7 @@ static int f_chdir(lua_State *L) {
   const char *path = luaL_checkstring(L, 1);
 #ifdef _WIN32
   LPWSTR wpath = utfconv_utf8towc(path);
-  if (wpath == NULL) { return luaL_error(L, UTFCONV_ERROR_INVALID_CONVERSION ); }
+  if (wpath == NULL) { luaL_error(L, UTFCONV_ERROR_INVALID_CONVERSION ); }
   int err = _wchdir(wpath);
   free(wpath);
 #else
@@ -785,7 +785,7 @@ static int f_get_fs_type(lua_State *L) {
     struct statfs buf;
     int status = statfs(path, &buf);
     if (status != 0) {
-      return luaL_error(L, "error calling statfs on %s", path);
+      luaL_error(L, "error calling statfs on %s", path);
     }
     for (int i = 0; fs_names[i].magic; i++) {
       if (fs_names[i].magic == buf.f_type) {
@@ -1015,8 +1015,10 @@ static int f_load_native_plugin(lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   const char *path = luaL_checkstring(L, 2);
   void *library = SDL_LoadObject(path);
-  if (!library)
-    return (lua_pushstring(L, SDL_GetError()), lua_error(L));
+  if (!library) {
+    lua_pushstring(L, SDL_GetError());
+    lua_error(L);
+  }
 
   lua_getglobal(L, "package");
   lua_getfield(L, -1, "native_plugins");
@@ -1037,14 +1039,14 @@ static int f_load_native_plugin(lua_State *L) {
     int (*entrypoint)(lua_State *L);
     *(void**)(&entrypoint) = SDL_LoadFunction(library, entrypoint_name);
     if (!entrypoint)
-      return luaL_error(L, "Unable to load %s: Can't find %s(lua_State *L, void *XL)", name, entrypoint_name);
+      luaL_error(L, "Unable to load %s: Can't find %s(lua_State *L, void *XL)", name, entrypoint_name);
     result = entrypoint(L);
   } else {
     result = ext_entrypoint(L, api_require);
   }
 
   if (!result)
-    return luaL_error(L, "Unable to load %s: entrypoint must return a value", name);
+    luaL_error(L, "Unable to load %s: entrypoint must return a value", name);
 
   return result;
 }
@@ -1190,7 +1192,7 @@ static const luaL_Reg lib[] = {
 
 int luaopen_system(lua_State *L) {
   luaL_newmetatable(L, API_TYPE_NATIVE_PLUGIN);
-  lua_pushcfunction(L, f_library_gc);
+  lua_pushcfunction(L, f_library_gc, "system_gc");
   lua_setfield(L, -2, "__gc");
   luaL_newlib(L, lib);
   return 1;

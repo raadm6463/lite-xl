@@ -1,6 +1,6 @@
 find_package(SDL2 REQUIRED)
 find_package(Freetype REQUIRED)
-find_package(lua REQUIRED)
+find_package(luau REQUIRED)
 
 add_subdirectory(api)
 
@@ -39,7 +39,8 @@ target_include_directories(lite-xl PUBLIC ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(lite-xl PUBLIC ${LUA_INCLUDE_DIRS})
 target_link_libraries(lite-xl PUBLIC ${SDL2_LIBRARIES})
 target_link_libraries(lite-xl PUBLIC ${FREETYPE_LIBRARIES})
-target_link_libraries(lite-xl PUBLIC ${LUA_LIBRARIES})
+target_link_libraries(lite-xl PUBLIC Luau.Compiler Luau.VM)
+target_compile_definitions(lite-xl PRIVATE LUA_API=extern)
 if (APPLE)
   target_link_libraries(lite-xl PUBLIC "-framework CoreServices")
   target_link_libraries(lite-xl PUBLIC "-framework Foundation")

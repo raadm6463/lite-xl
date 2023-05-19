@@ -7,6 +7,7 @@
 #include <SDL.h>
 #include <SDL_thread.h>
 #include <assert.h>
+#include <lua.h>
 
 #if _WIN32
   // https://stackoverflow.com/questions/60645/overlapped-i-o-on-anonymous-pipe
@@ -356,7 +357,7 @@ static int process_start(lua_State* L) {
     if (!cmd_len)
       // we have not allocated anything here yet, so we can skip cleanup code
       // don't do this anywhere else!
-      return luaL_argerror(L, 1,"table cannot be empty");
+      luaL_argerror(L, 1,"table cannot be empty");
     for (size_t i = 1; i <= cmd_len; ++i) {
       lua_pushinteger(L, i);
       lua_rawget(L, 1);
@@ -599,7 +600,7 @@ static int process_start(lua_State* L) {
     }
   }
   if (retval == -1)
-    return lua_error(L);
+    lua_error(L);
 
   self->running = true;
   return retval;
@@ -609,7 +610,7 @@ static int g_read(lua_State* L, int stream, unsigned long read_size) {
   process_t* self = (process_t*) luaL_checkudata(L, 1, API_TYPE_PROCESS);
   long length = 0;
   if (stream != STDOUT_FD && stream != STDERR_FD)
-    return luaL_error(L, "error: redirect to handles, FILE* and paths are not supported");
+    luaL_error(L, "error: redirect to handles, FILE* and paths are not supported");
   #if _WIN32
     int writable_stream_idx = stream - 1;
     if (self->reading[writable_stream_idx] || !ReadFile(self->child_pipes[stream][0], self->buffer[writable_stream_idx], READ_BUF_SIZE, NULL, &self->overlapped[writable_stream_idx])) {
@@ -659,7 +660,7 @@ static int f_write(lua_State* L) {
     if (!WriteFile(self->child_pipes[STDIN_FD][1], data, data_size, &dwWritten, NULL)) {
       push_error(L, NULL, GetLastError());
       signal_process(self, SIGNAL_TERM);
-      return lua_error(L);
+      lua_error(L);
     }
     length = dwWritten;
   #else
@@ -669,7 +670,7 @@ static int f_write(lua_State* L) {
     else if (length < 0) {
       push_error(L, "cannot write to child process", errno);
       signal_process(self, SIGNAL_TERM);
-      return lua_error(L);
+      lua_error(L);
     }
   #endif
   lua_pushinteger(L, length);
@@ -824,14 +825,14 @@ int luaopen_process(lua_State *L) {
 
   // create the process metatable
   luaL_newmetatable(L, API_TYPE_PROCESS);
-  luaL_setfuncs(L, process_metatable, 0);
+  luaL_register(L, NULL, process_metatable);
   lua_pushvalue(L, -1);
   lua_setfield(L, -2, "__index");
 
   // create the process library
   luaL_newlib(L, lib);
   lua_newtable(L);
-  lua_pushcfunction(L, process_gc);
+  lua_pushcfunction(L, process_gc, "process_gc");
   lua_setfield(L, -2, "__gc");
   lua_setmetatable(L, -2);
 
