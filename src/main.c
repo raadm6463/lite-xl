@@ -4,6 +4,7 @@
 #include "api/api.h"
 #include "rencache.h"
 #include "renderer.h"
+#include "ipc.h"
 
 #include <signal.h>
 
@@ -120,6 +121,40 @@ void set_macos_bundle_resources(lua_State *L);
 #endif
 
 int main(int argc, char **argv) {
+  if (check_socket())
+  {
+    open_socket();
+    puts("Socket");
+
+    Message show_msg = {
+      .type_length = 13,
+      .type = "FOCUS_WINDOW",
+
+      .data_length = 0,
+      .data = NULL
+    };
+
+    send_message(&show_msg);
+
+    close_socket();
+    return 0;
+  }
+  else
+  {
+    puts("No Socket");
+  }
+
+  open_socket();
+  while (1)
+  {
+    Message* msg = receive_message();
+
+    if (!msg)
+      continue;
+
+    puts("MESSAGE RECEIVED");
+  }
+
 #ifndef _WIN32
   signal(SIGPIPE, SIG_IGN);
 #endif
@@ -266,6 +301,8 @@ init_lua:
   // reaping child processes
   ren_free_window_resources(&window_renderer);
   lua_close(L);
+
+  closet_socket();
 
   return EXIT_SUCCESS;
 }
