@@ -23,7 +23,6 @@ typedef struct { SDL_Surface *surface; int scale; } RenSurface;
 
 struct RenWindow;
 typedef struct RenWindow RenWindow;
-extern RenWindow* window_renderer;
 
 RenFont* ren_font_load(RenWindow *window_renderer, const char *filename, float size, ERenFontAntialiasing antialiasing, ERenFontHinting hinting, unsigned char style);
 RenFont* ren_font_copy(RenWindow *window_renderer, RenFont* font, float size, ERenFontAntialiasing antialiasing, ERenFontHinting hinting, int style);

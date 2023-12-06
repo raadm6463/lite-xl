@@ -22,7 +22,6 @@
 #define MAX_LOADABLE_GLYPHSETS (MAX_UNICODE / GLYPHSET_SIZE)
 #define SUBPIXEL_BITMAPS_CACHED 3
 
-RenWindow* window_renderer = NULL;
 static FT_Library library;
 
 // draw_rect_surface is used as a 1x1 surface to simplify ren_draw_rect with blending

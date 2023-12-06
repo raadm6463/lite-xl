@@ -56,63 +56,6 @@ static void str_tolower(char *p) {
   }
 }
 
-struct HitTestInfo {
-  int title_height;
-  int controls_width;
-  int resize_border;
-};
-typedef struct HitTestInfo HitTestInfo;
-
-static HitTestInfo window_hit_info[1] = {{0, 0, 0}};
-
-#define RESIZE_FROM_TOP 0
-#define RESIZE_FROM_RIGHT 0
-
-static SDL_HitTestResult SDLCALL hit_test(SDL_Window *window, const SDL_Point *pt, void *data) {
-  const HitTestInfo *hit_info = (HitTestInfo *) data;
-  const int resize_border = hit_info->resize_border;
-  const int controls_width = hit_info->controls_width;
-  int w, h;
-
-  SDL_GetWindowSize(window_renderer->window, &w, &h);
-
-  if (pt->y < hit_info->title_height &&
-    #if RESIZE_FROM_TOP
-    pt->y > hit_info->resize_border &&
-    #endif
-    pt->x > resize_border && pt->x < w - controls_width) {
-    return SDL_HITTEST_DRAGGABLE;
-  }
-
-  #define REPORT_RESIZE_HIT(name) { \
-    return SDL_HITTEST_RESIZE_##name; \
-  }
-
-  if (pt->x < resize_border && pt->y < resize_border) {
-    REPORT_RESIZE_HIT(TOPLEFT);
-  #if RESIZE_FROM_TOP
-  } else if (pt->x > resize_border && pt->x < w - controls_width && pt->y < resize_border) {
-    REPORT_RESIZE_HIT(TOP);
-  #endif
-  } else if (pt->x > w - resize_border && pt->y < resize_border) {
-    REPORT_RESIZE_HIT(TOPRIGHT);
-  #if RESIZE_FROM_RIGHT
-  } else if (pt->x > w - resize_border && pt->y > resize_border && pt->y < h - resize_border) {
-    REPORT_RESIZE_HIT(RIGHT);
-  #endif
-  } else if (pt->x > w - resize_border && pt->y > h - resize_border) {
-    REPORT_RESIZE_HIT(BOTTOMRIGHT);
-  } else if (pt->x < w - resize_border && pt->x > resize_border && pt->y > h - resize_border) {
-    REPORT_RESIZE_HIT(BOTTOM);
-  } else if (pt->x < resize_border && pt->y > h - resize_border) {
-    REPORT_RESIZE_HIT(BOTTOMLEFT);
-  } else if (pt->x < resize_border && pt->y < h - resize_border && pt->y > resize_border) {
-    REPORT_RESIZE_HIT(LEFT);
-  }
-
-  return SDL_HITTEST_NORMAL;
-}
-
 static const char *numpad[] = { "end", "down", "pagedown", "left", "", "right", "home", "up", "pageup", "ins", "delete" };
 
 static const char *get_key_name(const SDL_Event *e, char *buf) {
@@ -178,6 +121,8 @@ top:
   if ( !SDL_PollEvent(&e) ) {
     return 0;
   }
+
+  RenWindow* window_renderer = NULL;
 
   switch (e.type) {
     case SDL_QUIT:
@@ -426,93 +371,6 @@ static int f_set_cursor(lua_State *L) {
   return 0;
 }
 
-
-static int f_set_window_title(lua_State *L) {
-  const char *title = luaL_checkstring(L, 1);
-  SDL_SetWindowTitle(window_renderer->window, title);
-  return 0;
-}
-
-
-static const char *window_opts[] = { "normal", "minimized", "maximized", "fullscreen", 0 };
-enum { WIN_NORMAL, WIN_MINIMIZED, WIN_MAXIMIZED, WIN_FULLSCREEN };
-
-static int f_set_window_mode(lua_State *L) {
-  int n = luaL_checkoption(L, 1, "normal", window_opts);
-  SDL_SetWindowFullscreen(window_renderer->window,
-    n == WIN_FULLSCREEN ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-  if (n == WIN_NORMAL) { SDL_RestoreWindow(window_renderer->window); }
-  if (n == WIN_MAXIMIZED) { SDL_MaximizeWindow(window_renderer->window); }
-  if (n == WIN_MINIMIZED) { SDL_MinimizeWindow(window_renderer->window); }
-  return 0;
-}
-
-
-static int f_set_window_bordered(lua_State *L) {
-  int bordered = lua_toboolean(L, 1);
-  SDL_SetWindowBordered(window_renderer->window, bordered);
-  return 0;
-}
-
-
-static int f_set_window_hit_test(lua_State *L) {
-  if (lua_gettop(L) == 0) {
-    SDL_SetWindowHitTest(window_renderer->window, NULL, NULL);
-    return 0;
-  }
-  window_hit_info->title_height = luaL_checknumber(L, 1);
-  window_hit_info->controls_width = luaL_checknumber(L, 2);
-  window_hit_info->resize_border = luaL_checknumber(L, 3);
-  SDL_SetWindowHitTest(window_renderer->window, hit_test, window_hit_info);
-  return 0;
-}
-
-
-static int f_get_window_size(lua_State *L) {
-  int x, y, w, h;
-  SDL_GetWindowSize(window_renderer->window, &w, &h);
-  SDL_GetWindowPosition(window_renderer->window, &x, &y);
-  lua_pushinteger(L, w);
-  lua_pushinteger(L, h);
-  lua_pushinteger(L, x);
-  lua_pushinteger(L, y);
-  return 4;
-}
-
-
-static int f_set_window_size(lua_State *L) {
-  double w = luaL_checknumber(L, 1);
-  double h = luaL_checknumber(L, 2);
-  double x = luaL_checknumber(L, 3);
-  double y = luaL_checknumber(L, 4);
-  SDL_SetWindowSize(window_renderer->window, w, h);
-  SDL_SetWindowPosition(window_renderer->window, x, y);
-  ren_resize_window(window_renderer);
-  return 0;
-}
-
-
-static int f_window_has_focus(lua_State *L) {
-  unsigned flags = SDL_GetWindowFlags(window_renderer->window);
-  lua_pushboolean(L, flags & SDL_WINDOW_INPUT_FOCUS);
-  return 1;
-}
-
-
-static int f_get_window_mode(lua_State *L) {
-  unsigned flags = SDL_GetWindowFlags(window_renderer->window);
-  if (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) {
-    lua_pushstring(L, "fullscreen");
-  } else if (flags & SDL_WINDOW_MINIMIZED) {
-    lua_pushstring(L, "minimized");
-  } else if (flags & SDL_WINDOW_MAXIMIZED) {
-    lua_pushstring(L, "maximized");
-  } else {
-    lua_pushstring(L, "normal");
-  }
-  return 1;
-}
-
 static int f_set_text_input_rect(lua_State *L) {
   SDL_Rect rect;
   rect.x = luaL_checknumber(L, 1);
@@ -527,19 +385,6 @@ static int f_clear_ime(lua_State *L) {
 #if SDL_VERSION_ATLEAST(2, 0, 22)
   SDL_ClearComposition();
 #endif
-  return 0;
-}
-
-
-static int f_raise_window(lua_State *L) {
-  /*
-    SDL_RaiseWindow should be enough but on some window managers like the
-    one used on Gnome the window needs to first have input focus in order
-    to allow the window to be focused. Also on wayland the raise window event
-    may not always be obeyed.
-  */
-  SDL_SetWindowInputFocus(window_renderer->window);
-  SDL_RaiseWindow(window_renderer->window);
   return 0;
 }
 
@@ -914,13 +759,6 @@ static int f_fuzzy_match(lua_State *L) {
   return 1;
 }
 
-static int f_set_window_opacity(lua_State *L) {
-  double n = luaL_checknumber(L, 1);
-  int r = SDL_SetWindowOpacity(window_renderer->window, n);
-  lua_pushboolean(L, r > -1);
-  return 1;
-}
-
 typedef void (*fptr)(void);
 
 typedef struct lua_function_node {
@@ -1155,17 +993,8 @@ static const luaL_Reg lib[] = {
   { "poll_event",          f_poll_event          },
   { "wait_event",          f_wait_event          },
   { "set_cursor",          f_set_cursor          },
-  { "set_window_title",    f_set_window_title    },
-  { "set_window_mode",     f_set_window_mode     },
-  { "get_window_mode",     f_get_window_mode     },
-  { "set_window_bordered", f_set_window_bordered },
-  { "set_window_hit_test", f_set_window_hit_test },
-  { "get_window_size",     f_get_window_size     },
-  { "set_window_size",     f_set_window_size     },
   { "set_text_input_rect", f_set_text_input_rect },
   { "clear_ime",           f_clear_ime           },
-  { "window_has_focus",    f_window_has_focus    },
-  { "raise_window",        f_raise_window        },
   { "show_fatal_error",    f_show_fatal_error    },
   { "rmdir",               f_rmdir               },
   { "chdir",               f_chdir               },
@@ -1180,7 +1009,6 @@ static const luaL_Reg lib[] = {
   { "sleep",               f_sleep               },
   { "exec",                f_exec                },
   { "fuzzy_match",         f_fuzzy_match         },
-  { "set_window_opacity",  f_set_window_opacity  },
   { "load_native_plugin",  f_load_native_plugin  },
   { "path_compare",        f_path_compare        },
   { "get_fs_type",         f_get_fs_type         },

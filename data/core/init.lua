@@ -1,5 +1,8 @@
 require "core.strict"
 require "core.regex"
+
+main_window = window.new()
+
 local common = require "core.common"
 local config = require "core.config"
 local style = require "colors.default"
